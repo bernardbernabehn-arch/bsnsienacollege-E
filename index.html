@@ -1063,6 +1063,26 @@
             applyFiltersAndRender();
         });
 
+        // Global callback for JSONP
+        window.handleGoogleScriptResponse = function(data) {
+            const loading = document.getElementById('resultsLoadingState');
+            const filterBar = document.getElementById('resultsFilterBar');
+            const noResults = document.getElementById('noResultsMsg');
+
+            if (data && data.result === 'success' && data.data && data.data.length > 0) {
+                allFetchedResults = data.data;
+                filterBar.classList.remove('hidden');
+                applyFiltersAndRender();
+            } else {
+                loading.classList.add('hidden');
+                noResults.classList.remove('hidden');
+            }
+            
+            // Clean up the script tag
+            const scriptTag = document.getElementById('jsonp-request');
+            if (scriptTag) scriptTag.remove();
+        };
+
         function fetchResultsData() {
             const loading = document.getElementById('resultsLoadingState');
             const dataState = document.getElementById('resultsDataState');
@@ -1083,26 +1103,31 @@
                 return;
             }
 
+            // Attempt standard fetch first (works if properly deployed as "Anyone")
             fetch(GOOGLE_SCRIPT_URL)
                 .then(res => {
                     if (!res.ok) throw new Error("Network response was not ok");
                     return res.json();
                 })
                 .then(data => {
-                    if (data.result === 'success' && data.data && data.data.length > 0) {
-                        allFetchedResults = data.data;
-                        filterBar.classList.remove('hidden');
-                        applyFiltersAndRender();
-                    } else {
-                        loading.classList.add('hidden');
-                        noResults.classList.remove('hidden');
-                    }
+                    window.handleGoogleScriptResponse(data);
                 })
                 .catch(err => {
-                    loading.classList.add('hidden');
-                    noResults.classList.remove('hidden');
-                    noResults.innerHTML = `<svg class="w-12 h-12 mx-auto text-red-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Error connecting to database.<br>Please verify your Google Apps Script is deployed as <b>"Execute as: Me"</b> and <b>"Who has access: Anyone"</b>.`;
-                    console.warn("Fetch results error:", err);
+                    console.warn("Fetch failed, attempting JSONP fallback...", err);
+                    
+                    // Fallback to JSONP if fetch fails (due to strict CORS)
+                    const script = document.createElement('script');
+                    script.id = 'jsonp-request';
+                    // Add a parameter 'callback' to tell Apps Script to wrap the response
+                    script.src = `${GOOGLE_SCRIPT_URL}?callback=handleGoogleScriptResponse&t=${Date.now()}`;
+                    
+                    script.onerror = () => {
+                         loading.classList.add('hidden');
+                         noResults.classList.remove('hidden');
+                         noResults.innerHTML = `<svg class="w-12 h-12 mx-auto text-red-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Error connecting to database.<br>Please verify your Google Apps Script is deployed as <b>"Execute as: Me"</b> and <b>"Who has access: Anyone"</b>.`;
+                    };
+                    
+                    document.body.appendChild(script);
                 });
         }
 
