@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Siena College Taytay BSN - Essay Exam</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -211,9 +212,9 @@
             
             <!-- ACTION BUTTONS -->
             <div class="flex flex-col sm:flex-row gap-4 mt-8 no-print border-t border-slate-200 pt-6">
-                <button onclick="window.print()" class="flex-1 bg-white border border-rose-800 hover:bg-rose-50 text-rose-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                <button id="studentDownloadPdfBtn" class="flex-1 bg-white border border-rose-800 hover:bg-rose-50 text-rose-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Print / Save as PDF
+                    Download as PDF
                 </button>
                 <button onclick="location.reload()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
                     Take Another Exam
@@ -391,6 +392,24 @@
             </div>
         </div>
 
+        <!-- DELETE CONFIRMATION MODAL -->
+        <div id="deleteConfirmModal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-[95] fade-in backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center border-t-4 border-red-600">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Delete Submission?</h2>
+                <p class="text-slate-600 mb-6 text-sm">Are you sure you want to permanently delete <strong id="deleteStudentNameDisplay" class="text-slate-800">this student's</strong> exam record? This action cannot be undone.</p>
+                
+                <div class="flex gap-3">
+                    <button id="cancelDeleteBtn" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-medium py-2.5 rounded-lg transition-colors">Cancel</button>
+                    <button id="confirmDeleteBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div id="adminModal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-[60] fade-in backdrop-blur-sm">
             <div class="bg-white rounded-2xl shadow-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <h2 id="modalTitle" class="text-xl font-bold text-slate-800 mb-4">Add New Essay Prompt</h2>
@@ -464,14 +483,14 @@
                     <h2 class="text-xl font-bold text-slate-800">Grade Summary Report</h2>
                     <div class="flex gap-3">
                         <button id="closeReportBtn" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors border border-slate-200 bg-white">Close</button>
-                        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+                        <button id="adminDownloadPdfBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> 
-                            Print / Save PDF
+                            Download PDF
                         </button>
                     </div>
                 </div>
 
-                <div id="printableReportArea" class="text-slate-800 bg-white">
+                <div id="printableReportArea" class="text-slate-800 bg-white p-4">
                     <div class="text-center mb-8">
                         <h1 class="text-3xl font-black uppercase tracking-wider text-slate-900">Siena College Taytay BSN</h1>
                         <h2 class="text-xl font-bold text-slate-700 mt-2">Official Grade Summary Report</h2>
@@ -1299,10 +1318,10 @@
                 }
                 
                 // Safely handle cases where the rating is a number or null
-                const isGraded = row.Rating && String(row.Rating).toLowerCase().includes('graded');
+                const isGraded = String(row.Rating || "").toLowerCase().includes('graded');
 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100" id="row-${row.RowIndex}">
                         <td class="p-4 font-bold text-slate-500 text-center text-sm">#${index + 1}</td>
                         <td class="p-4">
                             <div class="font-bold text-slate-800">${row["Full Name"] || 'N/A'}</div>
@@ -1315,11 +1334,16 @@
                                 ${row.Rating || 'Submitted'}
                             </span>
                         </td>
-                        <td class="p-4 text-center">
-                            <button onclick="openGradingModal(${row.RowIndex})" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold text-xs border border-blue-200 transition-colors shadow-sm flex items-center gap-1 mx-auto">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                Grade
-                            </button>
+                        <td class="p-4">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="openGradingModal(${row.RowIndex})" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold text-xs border border-blue-200 transition-colors shadow-sm flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    Grade
+                                </button>
+                                <button onclick="confirmDeleteSubmission(${row.RowIndex})" class="bg-red-50 text-red-600 px-2 py-1.5 rounded-lg hover:bg-red-100 font-bold text-xs border border-red-200 transition-colors shadow-sm" title="Delete Submission">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -1438,6 +1462,73 @@
             });
         });
 
+        // --- STREAMING_CHUNK:Deletion Logic... ---
+        let currentlyDeletingRowIndex = null;
+        
+        window.confirmDeleteSubmission = function(rowIndex) {
+            const row = allFetchedResults.find(r => r.RowIndex === rowIndex);
+            if (!row) return;
+            
+            currentlyDeletingRowIndex = rowIndex;
+            document.getElementById('deleteStudentNameDisplay').innerText = row["Full Name"] || 'Unknown Student';
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        };
+
+        document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            currentlyDeletingRowIndex = null;
+        });
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function(e) {
+            if (!currentlyDeletingRowIndex) return;
+            const btn = e.target;
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...`;
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'deleteSubmission');
+            formData.append('rowIndex', currentlyDeletingRowIndex);
+
+            if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+                 setTimeout(() => {
+                     finishDeletionSuccess(btn, originalText);
+                 }, 500);
+                 return;
+            }
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: formData
+            })
+            .then(() => {
+                finishDeletionSuccess(btn, originalText);
+            })
+            .catch(err => {
+                console.warn("Network routing failed for delete:", err);
+                btn.innerHTML = 'Network Error';
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000);
+            });
+        });
+
+        function finishDeletionSuccess(btn, originalText) {
+            // 1. Remove from local array
+            allFetchedResults = allFetchedResults.filter(r => r.RowIndex !== currentlyDeletingRowIndex);
+            
+            // 2. Refresh UI
+            applyFiltersAndRender(); 
+            
+            // 3. Reset Modal
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                document.getElementById('deleteConfirmModal').classList.add('hidden');
+                currentlyDeletingRowIndex = null;
+            }, 400); 
+        }
+
         // --- STREAMING_CHUNK:Grade Report Generation Logic... ---
         document.getElementById('generateReportBtn').addEventListener('click', () => {
             const tbody = document.getElementById('printReportTableBody');
@@ -1543,6 +1634,58 @@
 
         dismissWarningBtn.addEventListener('click', () => {
             cheatingModal.classList.add('hidden');
+        });
+
+        // --- PDF GENERATION FOR IPAD/MOBILE SUPPORT ---
+        document.getElementById('studentDownloadPdfBtn')?.addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-2 inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating PDF...`;
+            
+            const element = document.getElementById('examSummaryContainer');
+            const safeName = studentData.name ? studentData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'student';
+            
+            const opt = {
+                margin:       0.4,
+                filename:     `${safeName}_exam_copy.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            if (typeof html2pdf !== 'undefined') {
+                html2pdf().set(opt).from(element).save().then(() => {
+                    btn.innerHTML = originalText;
+                });
+            } else {
+                window.print();
+                btn.innerHTML = originalText;
+            }
+        });
+
+        document.getElementById('adminDownloadPdfBtn')?.addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `Generating PDF...`;
+            
+            const element = document.getElementById('printableReportArea');
+            
+            const opt = {
+                margin:       0.4,
+                filename:     `Grade_Summary_Report.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            if (typeof html2pdf !== 'undefined') {
+                html2pdf().set(opt).from(element).save().then(() => {
+                    btn.innerHTML = originalText;
+                });
+            } else {
+                window.print();
+                btn.innerHTML = originalText;
+            }
         });
 
     </script>
