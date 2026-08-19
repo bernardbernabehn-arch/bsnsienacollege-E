@@ -1340,6 +1340,7 @@
             if (row) {
                 formData.append('studentEmail', row["Email"] || "");
                 formData.append('studentName', row["Full Name"] || "Student");
+                formData.append('courseInfo', row["Course"] || "the recent exam");
             }
 
             if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
@@ -1357,14 +1358,17 @@
                 body: formData
             })
             .then(() => {
-                // Done saving
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                document.getElementById('gradingModal').classList.add('hidden');
+                // Done saving. With no-cors we assume it successfully reached the server.
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    document.getElementById('gradingModal').classList.add('hidden');
+                }, 400); // small delay to ensure visual feedback
             })
             .catch(err => {
-                console.error("Failed to save grade:", err);
-                btn.innerHTML = 'Error Saving';
+                // If it entirely fails to network route, show error briefly
+                console.warn("Network routing failed:", err);
+                btn.innerHTML = 'Network Error';
                 setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000);
             });
         });
