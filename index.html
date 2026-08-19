@@ -99,6 +99,10 @@
                     <input type="text" id="course" required autocomplete="off" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-700 focus:border-rose-700 outline-none transition-all" placeholder="BSN">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                    <input type="email" id="studentEmail" required autocomplete="off" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-700 outline-none transition-all" placeholder="student@example.com">
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Select Exam</label>
                     <select id="studentExamSelect" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-700 outline-none bg-white">
                         <option value="">-- Choose Exam --</option>
@@ -354,8 +358,9 @@
                                         <th class="p-4 font-semibold text-slate-700 text-sm w-12 text-center">#</th>
                                         <th class="p-4 font-semibold text-slate-700 text-sm">Student Name</th>
                                         <th class="p-4 font-semibold text-slate-700 text-sm">Course Details</th>
-                                        <th class="p-4 font-semibold text-slate-700 text-sm">Essays Submitted</th>
-                                        <th class="p-4 font-semibold text-slate-700 text-sm">Grading Status</th>
+                                        <th class="p-4 font-semibold text-slate-700 text-sm">Score</th>
+                                        <th class="p-4 font-semibold text-slate-700 text-sm">Status</th>
+                                        <th class="p-4 font-semibold text-slate-700 text-sm text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="resultsTableBody" class="divide-y divide-slate-100">
@@ -384,6 +389,44 @@
                     <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
                         <button id="closeModalBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-medium px-6 py-2 rounded-lg transition-colors">Cancel</button>
                         <button id="saveQuestionBtn" class="bg-rose-800 hover:bg-rose-900 text-white font-medium px-6 py-2 rounded-lg transition-colors">Save Prompt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFESSOR GRADING MODAL -->
+        <div id="gradingModal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-[80] fade-in backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-xl flex flex-col max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800" id="gradeStudentName">Student Name</h2>
+                        <p class="text-sm text-slate-500" id="gradeStudentCourse">Course Info</p>
+                    </div>
+                    <button id="closeGradingBtn" class="text-slate-400 hover:text-slate-600 transition-colors p-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <!-- Essays Area -->
+                <div class="p-6 overflow-y-auto flex-grow bg-slate-100/50" id="gradeEssaysContainer">
+                    <!-- Essay responses injected here -->
+                </div>
+                
+                <!-- Grading Controls -->
+                <div class="p-6 border-t border-slate-200 bg-white rounded-b-2xl">
+                    <h3 class="font-bold text-slate-800 mb-3 text-sm uppercase tracking-wider">Evaluation & Grading</h3>
+                    <div class="flex flex-col sm:flex-row gap-4 items-end">
+                        <div class="w-full sm:w-1/3">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Update Score (e.g., 95/100, 3/3)</label>
+                            <input type="text" id="gradeScoreInput" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-700 outline-none font-semibold text-slate-800" placeholder="Enter score">
+                        </div>
+                        <div class="w-full sm:w-2/3">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Update Status / Feedback</label>
+                            <input type="text" id="gradeFeedbackInput" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-700 outline-none" placeholder="e.g., Graded - Excellent work">
+                        </div>
+                        <button id="saveGradeBtn" class="bg-rose-800 hover:bg-rose-900 text-white font-medium px-6 py-2 rounded-lg transition-colors shadow-sm w-full sm:w-auto h-[42px] whitespace-nowrap flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Save Grade
+                        </button>
                     </div>
                 </div>
             </div>
@@ -569,6 +612,7 @@
             
             studentData = {
                 name: document.getElementById('studentName').value,
+                email: document.getElementById('studentEmail').value,
                 course: document.getElementById('course').value,
                 year: document.getElementById('year').value,
                 section: document.getElementById('section').value,
@@ -743,11 +787,17 @@
             
             let summaryHTML = '';
             let totalWords = 0;
+            const answersPayload = []; // For backend saving
 
             questionsData.forEach((q, index) => {
                 const ansText = studentAnswers[index] || "";
                 const wordCount = ansText.length > 0 && ansText !== "[No answer provided due to time limit]" ? ansText.split(/\s+/).length : 0;
                 totalWords += wordCount;
+                
+                answersPayload.push({
+                    prompt: q.text,
+                    answer: ansText || "[No answer provided]"
+                });
 
                 summaryHTML += `
                     <div class="p-6 rounded-xl border border-slate-200 bg-white print-break-inside-avoid">
@@ -779,14 +829,15 @@
             const formData = new FormData();
             formData.append('action', 'submitExam'); 
             formData.append('name', studentData.name);
+            formData.append('email', studentData.email);
             formData.append('course', studentData.course + " - " + studentData.examTitle);
             formData.append('year', studentData.year);
             formData.append('section', studentData.section);
             formData.append('score', resultScoreString); // Will show as '3 Essays Submitted' in the sheet
             formData.append('rating', resultRating); 
             formData.append('timeRemaining', "Completed"); 
-            // We append the full HTML of the essay to the sheet as well if the google apps script captures extra fields, 
-            // but standard payload handles score/rating. The teacher can use the Print/Save PDF feature primarily.
+            // Save actual essays to backend
+            formData.append('answers', JSON.stringify(answersPayload));
 
             screens.exam.classList.add('hidden');
             timerDisplay.classList.add('hidden');
@@ -1055,8 +1106,8 @@
         
         document.getElementById('mockResultsBtn').addEventListener('click', () => {
             const mockData = [
-                { "Full Name": "Jane Doe", "Course": "BSN - Midterms", "Year Level": "3", "Section": "A1", "Score": "3 Essays Submitted", "Rating": "Pending Grading (450 words total)", "Timestamp": new Date().toISOString() },
-                { "Full Name": "John Smith", "Course": "BSN - Finals", "Year Level": "4", "Section": "B2", "Score": "3 Essays Submitted", "Rating": "Pending Grading (120 words total)", "Timestamp": new Date().toISOString() }
+                { "RowIndex": 2, "Full Name": "Jane Doe", "Course": "BSN - Midterms", "Year Level": "3", "Section": "A1", "Score": "3 Essays Submitted", "Rating": "Pending Grading", "Timestamp": new Date().toISOString(), "Answers": '[{"prompt":"Discuss the nursing process.","answer":"The nursing process involves ADPIE: Assessment, Diagnosis, Planning, Implementation, and Evaluation."}]' },
+                { "RowIndex": 3, "Full Name": "John Smith", "Course": "BSN - Finals", "Year Level": "4", "Section": "B2", "Score": "95/100", "Rating": "Graded - Excellent Work", "Timestamp": new Date().toISOString(), "Answers": '[{"prompt":"Explain type 1 diabetes.","answer":"Type 1 is an autoimmune destruction of beta cells..."}]' }
             ];
             allFetchedResults = mockData;
             document.getElementById('resultsFilterBar').classList.remove('hidden');
@@ -1182,6 +1233,8 @@
                     const d = new Date(row.Timestamp);
                     dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 }
+                
+                const isGraded = row.Rating && row.Rating.toLowerCase().includes('graded');
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
@@ -1190,12 +1243,18 @@
                             <div class="font-bold text-slate-800">${row["Full Name"] || 'N/A'}</div>
                             <div class="text-xs text-slate-400 mt-1">${dateStr}</div>
                         </td>
-                        <td class="p-4 text-slate-600 text-sm font-medium">BSN ${row["Year Level"] || ''} - ${row.Section || ''}<br><span class="text-xs text-slate-400">${row.Course || ''}</span></td>
-                        <td class="p-4 font-bold text-slate-800 text-sm">${row.Score || 'Completed'}</td>
+                        <td class="p-4 text-slate-600 text-sm font-medium">BSN ${row["Year Level"] || ''} - ${row.Section || ''}<br><span class="text-xs text-slate-400">${row.Course || ''}</span><br><span class="text-xs text-slate-500 underline">${row.Email || 'No Email'}</span></td>
+                        <td class="p-4 font-bold text-slate-800 text-sm">${row.Score || 'Submitted'}</td>
                         <td class="p-4">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 whitespace-nowrap">
-                                ${row.Rating || 'Pending Review'}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${isGraded ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                                ${row.Rating || 'Pending'}
                             </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="openGradingModal(${row.RowIndex})" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold text-xs border border-blue-200 transition-colors shadow-sm flex items-center gap-1 mx-auto">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                Grade
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -1205,6 +1264,110 @@
             dashboard.classList.remove('hidden');
             dataState.classList.remove('hidden');
         }
+
+        // --- STREAMING_CHUNK:Grading Logic... ---
+        let currentlyGradingRowIndex = null;
+
+        window.openGradingModal = function(rowIndex) {
+            const row = allFetchedResults.find(r => r.RowIndex === rowIndex);
+            if (!row) return;
+            
+            currentlyGradingRowIndex = rowIndex;
+            document.getElementById('gradeStudentName').innerText = row["Full Name"] || 'Unknown Student';
+            document.getElementById('gradeStudentCourse').innerText = `${row.Course || ''} | BSN ${row["Year Level"] || ''} - ${row.Section || ''}`;
+            
+            // Prefill current data
+            document.getElementById('gradeScoreInput').value = row.Score;
+            document.getElementById('gradeFeedbackInput').value = row.Rating || '';
+            
+            const container = document.getElementById('gradeEssaysContainer');
+            container.innerHTML = '';
+            
+            if (row.Answers && row.Answers.trim() !== '') {
+                try {
+                    const answers = JSON.parse(row.Answers);
+                    answers.forEach((ans, i) => {
+                        container.innerHTML += `
+                            <div class="mb-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                                <h4 class="font-bold text-slate-800 mb-4 text-sm border-b border-slate-100 pb-3 leading-relaxed"><span class="text-rose-800 mr-1 text-base">Prompt ${i+1}.</span> ${ans.prompt}</h4>
+                                <div class="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed font-medium bg-slate-50 p-4 rounded-lg border border-slate-100">${ans.answer}</div>
+                            </div>
+                        `;
+                    });
+                } catch (e) {
+                    container.innerHTML = `<div class="text-slate-500 italic p-4 bg-white rounded-lg border border-slate-200">Error loading essay data or legacy submission format.</div>`;
+                }
+            } else {
+                container.innerHTML = `<div class="text-slate-500 italic p-4 bg-white rounded-lg border border-slate-200">No essay content was saved for this submission (Legacy data).</div>`;
+            }
+            
+            document.getElementById('gradingModal').classList.remove('hidden');
+        };
+
+        document.getElementById('closeGradingBtn').addEventListener('click', () => {
+            document.getElementById('gradingModal').classList.add('hidden');
+            currentlyGradingRowIndex = null;
+        });
+
+        document.getElementById('saveGradeBtn').addEventListener('click', function(e) {
+            const btn = e.target;
+            const score = document.getElementById('gradeScoreInput').value.trim();
+            const rating = document.getElementById('gradeFeedbackInput').value.trim();
+            
+            if (!currentlyGradingRowIndex) return;
+
+            // 1. Instantly update UI locally
+            const rowIdx = allFetchedResults.findIndex(r => r.RowIndex === currentlyGradingRowIndex);
+            if (rowIdx > -1) {
+                allFetchedResults[rowIdx].Score = score;
+                allFetchedResults[rowIdx].Rating = rating;
+                applyFiltersAndRender(); 
+            }
+
+            // 2. Prepare visual feedback
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 inline mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...`;
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'updateGrade');
+            formData.append('rowIndex', currentlyGradingRowIndex);
+            formData.append('newScore', score);
+            formData.append('newRating', rating);
+
+            // Fetch the email and name from our cached results data
+            const row = allFetchedResults.find(r => r.RowIndex === currentlyGradingRowIndex);
+            if (row) {
+                formData.append('studentEmail', row["Email"] || "");
+                formData.append('studentName', row["Full Name"] || "Student");
+            }
+
+            if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+                 setTimeout(() => {
+                     btn.innerHTML = originalText;
+                     btn.disabled = false;
+                     document.getElementById('gradingModal').classList.add('hidden');
+                 }, 500);
+                 return;
+            }
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: formData
+            })
+            .then(() => {
+                // Done saving
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                document.getElementById('gradingModal').classList.add('hidden');
+            })
+            .catch(err => {
+                console.error("Failed to save grade:", err);
+                btn.innerHTML = 'Error Saving';
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000);
+            });
+        });
 
         // --- STREAMING_CHUNK:Global Anti-Cheating Defenses... ---
         
